@@ -1,12 +1,16 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.chrome.service import Service
 import urllib.request
 import os
 import sys
 import argparse
 from getpass import getpass
 from pathlib import Path
+import platform
+
+opsys=platform.system()
 
 parser = argparse.ArgumentParser(description="Download all Kaltura videos from a UniTN Moodle page.")
 parser.add_argument('-v', '--verbose' ,help="verbose", required=False, action='append_const', const=1)
@@ -25,7 +29,20 @@ try:
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
     if(verbose==None):
         options.headless = True
-    browser = webdriver.Chrome(options=options)
+    if(opsys=="Windows"):
+        ser=Service(os.getcwd()+str(Path("\\bin\\chromedriver_WIN32.exe")))
+        browser = webdriver.Chrome(options=options, service=ser)
+    elif(opsys=="Linux"):
+        ser=Service(os.getcwd()+str(Path("\\bin\\chromedriver_LINUX64")))
+        browser = webdriver.Chrome(options=options,service=ser)
+    elif(opsys=="Darwin"):
+        if(platform.architecture=="arm"):
+            ser=Service(os.getcwd()+str(Path("\\bin\\chromedriver_MAC_M1")))
+            browser = webdriver.Chrome(options=options,service=ser)
+        else:
+            ser=Service(os.getcwd()+str(Path("\\bin\\chromedriver_MAC64")))
+            browser = webdriver.Chrome(options=options,service=ser)
+
 except Exception :
     print("ERROR: 'chromedriver.exe' not found")
     sys.exit()
@@ -105,7 +122,7 @@ try:
         #download video from source page
         cwd = os.getcwd()
         filename=key.replace("/", "-")
-        path=cwd+"\\Videos\\"+filename+".mp4"
+        path=cwd+str(Path("\\Videos\\"))+filename+".mp4"
         urllib.request.urlretrieve(link, path)
         print("Downloading video "+ str(i)+" of " + str(len(videos)) + " please wait...")
         i=i+1
