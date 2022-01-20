@@ -5,10 +5,24 @@ from selenium.webdriver.chrome.service import Service
 import urllib.request
 import os
 import sys
+import time
 import argparse
 from getpass import getpass
 from pathlib import Path
 import platform
+
+def reporthook(count, block_size, total_size):
+    global start_time
+    if count == 0:
+        start_time = time.time()
+        return
+    duration = time.time() - start_time
+    progress_size = int(count * block_size)
+    speed = int(progress_size / (1024 * duration))
+    percent = min(int(count * block_size * 100 / total_size),100)
+    sys.stdout.write("\r...%d%%, %d MB, %d KB/s, %d seconds passed" %
+                    (percent, progress_size / (1024 * 1024), speed, duration))
+    sys.stdout.flush()
 
 opsys=platform.system()
 
@@ -122,9 +136,10 @@ try:
         #download video from source page
         cwd = os.getcwd()
         filename=key.replace("/", "-")
-        path=cwd+str(Path("\\Videos\\"))+filename+".mp4"
-        urllib.request.urlretrieve(link, path)
-        print("Downloading video "+ str(i)+" of " + str(len(videos)) + " please wait...")
+        path=cwd+str(Path("\\Videos\\" +filename +".mp4"))
+        start_time=time.time()
+        urllib.request.urlretrieve(link, path, reporthook)
+        print("\n"+"Video "+ str(i)+" of " + str(len(videos)) + " downloaded please wait...")
         i=i+1
 
     print("Download complete, thanks for flying with us!")
