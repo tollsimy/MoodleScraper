@@ -10,6 +10,150 @@ import argparse
 from getpass import getpass
 from pathlib import Path
 import platform
+import json
+
+global video_dict
+        
+def write_json(filename, jsonObj):
+    try:
+        with open(filename+'.json', 'w') as outfile:
+            json.dump(jsonObj, outfile, indent=2)
+    except Exception as e:
+        print(e)
+
+def create_db():
+    json_filename = ""
+    while(json_filename == ""):
+        json_filename = input("Type the name of the course you want to download: ")
+    write_json(json_filename, video_dict)
+
+def json2dict(filename):
+    with open(str(filename), "r") as read_file:
+        dict = json.load(read_file)
+        return dict
+
+def show_dict(dict):
+    print ("{:<10} {:<10}".format('ID', 'NAME'))
+    j = 0
+    for i in dict.items():
+        print ("{:<10} {:<10}".format(j, i[0]))
+        j+=1
+
+def download_multiple(dict):
+    show_dict(dict)
+    print("List which videos do you want to download using commas or type all to select all \neg: 1,2,3")
+    in_list = input(": ")
+    if(in_list != 'all'):
+        in_list = list(in_list.split(','))
+        index = 0
+        #itera su tutto il dict, da fixare
+        for i, k in enumerate(dict):
+            try:
+                if(int(in_list[index])==i):
+                    print(f"Scarico: {k}")
+                    download_single_video(k)
+                if(index+1 < len(in_list)):
+                    index+=1
+            except Exception as e:
+                print(e)
+    else:
+        download_all(dict)
+
+
+def download_single_video(obj):
+    global video_dict
+    #download video from source page
+    cwd = os.getcwd()
+    filename=obj.replace("/", "-")
+    path=cwd+str(Path("\\Videos\\" +filename +".mp4"))
+    if(opsys=="Darwin"):
+        path=cwd+str(Path("/Videos/" +filename +".mp4"))
+    start_time=time.time()
+    urllib.request.urlretrieve(video_dict[obj], path, reporthook)
+
+#download all files
+def download_all(dict):
+    i = 0
+    for j in dict:
+        download_single_video(j)
+        print("\n"+"Video "+ str(i+1)+" of " + str(len(dict)) + " downloaded please wait...")
+        i=i+1
+
+def login():
+    global LOGINPAGE
+    print("Logging in...")
+    #get login page
+    browser.get(LOGINPAGE)
+    LOGINPAGE=browser.find_element(by=By.ID, value="btn-login-unitn-it" )
+    LOGINPAGE.click()
+    wait = WebDriverWait( browser, 5 )
+
+    #login page
+    login = browser.find_element(by=By.NAME, value="j_username")
+    login.send_keys(USERNAME)
+
+    password = browser.find_element(by=By.NAME, value="j_password")
+    password.send_keys(PASSWORD)
+
+    accedi = browser.find_element(By.ID, value="btnAccedi")
+    pagina=browser.current_url
+    accedi.click()
+    wait = WebDriverWait( browser, 5 )
+    if(pagina[0:-4]==browser.current_url[0:-4]):
+        print("ERROR: Wrong username or password!")
+        sys.exit()
+    
+
+def get_videos():
+    global video_dict
+    #get course page
+    browser.get(COURSEPAGE)
+
+    topics = browser.find_elements(By.CLASS_NAME, value="aalink")
+
+    print("Searching for Kaltura videos...")
+
+    videos = {}
+    for topic in topics:
+        if "Kaltura Video Resource" in topic.text:
+            name=topic.text.replace("Kaltura Video Resource","")  #remove useless chars
+            name=name[0:-1]                                         #remove \n
+            videos[name]=topic.get_attribute("href")
+        elif "Kaltura Video Presentation" in topic.text:
+            name2=topic.text.replace("Kaltura Video Presentation","")   #remove useless chars
+            name2=name2[0:-1]                                           #remove \n
+            videos[name2]=topic.get_attribute("href")
+
+    print("Found " + str(len(videos))+ " videos...")
+    print("The script will browse through every video to create a download link, it may take a while")
+    print("Creating download list...")
+    p = Path("Videos/")
+    p.mkdir(parents=True, exist_ok=True)
+
+    video_dict = {}
+    i=1
+    for key in videos :
+        #go to video page
+        browser.get(videos[key])
+        browser.implicitly_wait(10)     #wait for video page to load
+
+        #get video link
+        print(f"Getting video link #{i} of {len(videos)}")
+        try:
+            browser.switch_to.frame("contentframe")
+            browser.switch_to.frame("kplayer_ifp")
+        except Exception as e:
+            print("W: One ore more frames not found, please wait...")
+        try:
+            linkElem = browser.find_element(By.ID, value="pid_kplayer")
+            link=linkElem.get_attribute("src")
+            video_dict[key] = link
+            i+=1
+        except Exception as e:
+            print("W: pid_kplayer not found, please wait...")
+            print(e)
+            browser.switch_to.default_content()
+            link=browser.find_element(By.XPATH,value=('//*[@id="contentframe"]')).get_attribute('src')
 
 def reporthook(count, block_size, total_size):
     global start_time
@@ -17,6 +161,8 @@ def reporthook(count, block_size, total_size):
         start_time = time.time()
         return
     duration = time.time() - start_time
+    if(duration==0.0):
+        duration = 0.1
     progress_size = int(count * block_size)
     speed = int(progress_size / (1024 * duration))
     percent = min(int(count * block_size * 100 / total_size),100)
@@ -31,6 +177,8 @@ parser.add_argument('-v', '--verbose' ,help="verbose", required=False, action='a
 parser.add_argument("Page_URL",help="Moodle Page link",type=str)
 args=parser.parse_args()
 
+USERNAME = ""
+PASSWORD = ""
 USERNAME=input("Enter username: ")
 PASSWORD=getpass()
 verbose=args.verbose
@@ -67,82 +215,30 @@ if(verbose==None):
 else:
     print("Starting Chrome...")
 
-#get login page
-browser.get(LOGINPAGE)
+
 try:
-    LOGINPAGE=browser.find_element(by=By.ID, value="btn-login-unitn-it" )
-    LOGINPAGE.click()
-    wait = WebDriverWait( browser, 5 )
-
-    #login page
-    login = browser.find_element(by=By.NAME, value="j_username")
-    login.send_keys(USERNAME)
-
-    password = browser.find_element(by=By.NAME, value="j_password")
-    password.send_keys(PASSWORD)
-
-    accedi = browser.find_element(By.ID, value="btnAccedi")
-    pagina=browser.current_url
-    accedi.click()
-    wait = WebDriverWait( browser, 5 )
-    if(pagina[0:-4]==browser.current_url[0:-4]):
-        print("ERROR: Wrong username or password!")
-        sys.exit()
-    print("Logging in...")
-
-    #get course page
-    browser.get(COURSEPAGE)
-
-    topics = browser.find_elements(By.CLASS_NAME, value="aalink")
-
-    print("Searching for Kaltura videos...")
-
-    videos = {"name":"link"}
-    for topic in topics:
-        if "Kaltura Video Resource" in topic.text:
-            name=topic.text.replace("Kaltura Video Resource","")  #remove useless chars
-            name=name[0:-1]                                         #remove \n
-            videos[name]=topic.get_attribute("href")
-        elif "Kaltura Video Presentation" in topic.text:
-            name2=topic.text.replace("Kaltura Video Presentation","")   #remove useless chars
-            name2=name2[0:-1]                                           #remove \n
-            videos[name2]=topic.get_attribute("href")
-
-    videos.pop("name")   #remove first useless pair
-
-    print("Found " + str(len(videos))+ " videos...")
-    print("Starting downloads...")
-    p = Path("Videos/")
-    p.mkdir(parents=True, exist_ok=True)
-
-    i=1
-    for key in videos :
-        #go to video page
-        browser.get(videos[key])
-        browser.implicitly_wait(10)     #wait for video page to load
-
-        #get video link
-        try:
-            browser.switch_to.frame("contentframe")
-            browser.switch_to.frame("kplayer_ifp")
-        except Exception as e:
-            print("W: One ore more frames not found, please wait...")
-        try:
-            linkElem = browser.find_element(By.ID, value="pid_kplayer")
-            link=linkElem.get_attribute("src")
-        except Exception as e:
-            print("W: pid_kplayer not found, please wait...")
-            browser.switch_to.default_content()
-            link=browser.find_element(By.XPATH,value=('//*[@id="contentframe"]')).get_attribute('src')
-
-        #download video from source page
-        cwd = os.getcwd()
-        filename=key.replace("/", "-")
-        path=cwd+str(Path("\\Videos\\" +filename +".mp4"))
-        start_time=time.time()
-        urllib.request.urlretrieve(link, path, reporthook)
-        print("\n"+"Video "+ str(i)+" of " + str(len(videos)) + " downloaded please wait...")
-        i=i+1
+    choice = 'x'
+    filename = ""
+    while(choice != 'Y' and choice != 'N' and choice != 'y' and choice != 'n'):
+        choice = input("Do you want to download from an existing json file? [Y/N]: ")
+    if choice == 'Y' or choice == 'y':
+        while(filename == ""):
+            filename = input("Type the name of the file (don't include extension): ")
+        video_dict = json2dict(filename+'.json')
+        login()
+        download_multiple(video_dict)
+    else:
+        login()
+        get_videos()
+        choice = 'x'
+        while(choice != 'Y' and choice != 'N' and choice != 'y' and choice != 'n'):
+            choice = input("Do you want to create a json file to store the links? [Y/N]: ")
+        if choice == 'Y' or choice == 'y':
+            create_db()
+        download_multiple(video_dict)
+        pass
+    #create_db()
+    #download_all(video_dict)
 
     print("Download complete, thanks for flying with us!")
 except Exception as e:

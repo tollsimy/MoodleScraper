@@ -1,3 +1,4 @@
 **/Videos
 **/env
 *.code-workspace
+*.json
