@@ -51,13 +51,15 @@ try:
         browser = webdriver.Chrome(options=options,service=ser)
     elif(opsys=="Darwin"):
         if(platform.architecture=="arm"):
-            ser=Service(os.getcwd()+str(Path("\\bin\\chromedriver_MAC_M1")))
+            ser=Service(os.getcwd()+str(Path("/bin/chromedriver_MAC_M1")))
             browser = webdriver.Chrome(options=options,service=ser)
         else:
-            ser=Service(os.getcwd()+str(Path("\\bin\\chromedriver_MAC64")))
+            print(os.getcwd()+str(Path("/bin/chromedriver_MAC64")))
+            ser=Service(os.getcwd()+str(Path("/bin/chromedriver_MAC64")))
             browser = webdriver.Chrome(options=options,service=ser)
 
-except Exception :
+except Exception as e :
+    print(e)
     print("ERROR: 'chromedriver.exe' not found")
     sys.exit()
 if(verbose==None):
