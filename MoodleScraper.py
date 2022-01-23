@@ -41,7 +41,7 @@ def show_dict(dict):
 
 def download_multiple(dict):
     show_dict(dict)
-    print("List which videos do you want to download using commas or type all to select all \neg: 1,2,3")
+    print("List which videos do you want to download using commas or type 'all' to select all \neg: 1,2,3")
     in_list = input(": ")
     if(in_list != 'all'):
         in_list = list(in_list.split(','))
@@ -62,17 +62,20 @@ def download_multiple(dict):
 
 def download_single_video(obj):
     global video_dict
+    global start_time
     #download video from source page
     cwd = os.getcwd()
     filename=obj.replace("/", "-")
     path=cwd+str(Path("\\Videos\\" +filename +".mp4"))
-    if(opsys=="Darwin"):
+    if(opsys=="Darwin" or opsys=="Linux"):
         path=cwd+str(Path("/Videos/" +filename +".mp4"))
     start_time=time.time()
     urllib.request.urlretrieve(video_dict[obj], path, reporthook)
 
 #download all files
 def download_all(dict):
+    p = Path("Videos/")
+    p.mkdir(parents=True, exist_ok=True)
     i = 0
     for j in dict:
         download_single_video(j)
@@ -127,8 +130,6 @@ def get_videos():
     print("Found " + str(len(videos))+ " videos...")
     print("The script will browse through every video to create a download link, it may take a while")
     print("Creating download list...")
-    p = Path("Videos/")
-    p.mkdir(parents=True, exist_ok=True)
 
     video_dict = {}
     i=1
