@@ -1,5 +1,5 @@
 # MoodleScraper
-Chromedriver can be downloaded https://chromedriver.chromium.org/downloads and i don't own any part of it.
+Chromedriver can be downloaded https://chromedriver.chromium.org/downloads and i don't own any part of it.<br />
 In order to use Chromedriver you must have Chrome installed on default location.
 
 ## MacOS
