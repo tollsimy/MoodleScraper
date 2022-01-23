@@ -12,8 +12,18 @@ from pathlib import Path
 import platform
 import json
 
+#TODO: use __main__ like normal devs
 global video_dict
-        
+
+def hello():
+    print('''
+███╗   ███╗ ██████╗  ██████╗ ██████╗ ██╗     ███████╗    ███████╗ ██████╗██████╗  █████╗ ██████╗ ███████╗██████╗ 
+████╗ ████║██╔═══██╗██╔═══██╗██╔══██╗██║     ██╔════╝    ██╔════╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔══██╗
+██╔████╔██║██║   ██║██║   ██║██║  ██║██║     █████╗      ███████╗██║     ██████╔╝███████║██████╔╝█████╗  ██████╔╝
+██║╚██╔╝██║██║   ██║██║   ██║██║  ██║██║     ██╔══╝      ╚════██║██║     ██╔══██╗██╔══██║██╔═══╝ ██╔══╝  ██╔══██╗
+██║ ╚═╝ ██║╚██████╔╝╚██████╔╝██████╔╝███████╗███████╗    ███████║╚██████╗██║  ██║██║  ██║██║     ███████╗██║  ██║
+╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═════╝ ╚══════╝╚══════╝    ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚══════╝╚═╝  ╚═╝                                                                                                                        
+    ''')       
 def write_json(filename, jsonObj):
     try:
         with open(filename+'.json', 'w') as outfile:
@@ -133,6 +143,7 @@ def get_videos():
     for key in videos :
         #go to video page
         browser.get(videos[key])
+        #TODO: are emplicity wait really required?
         browser.implicitly_wait(5)     #wait for video page to load
 
         #get video link
@@ -177,12 +188,14 @@ args=parser.parse_args()
 
 USERNAME = ""
 PASSWORD = ""
+hello()
 USERNAME=input("Enter username: ")
 PASSWORD=getpass()
 verbose=args.verbose
 COURSEPAGE=args.Page_URL
 LOGINPAGE="https://didatticaonline.unitn.it/dol/loginUniTN.php"
 
+#TODO: wrap all in a try-catch to handle program breaking
 #set driver
 try:
     options = webdriver.ChromeOptions()
