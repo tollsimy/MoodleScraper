@@ -34,7 +34,7 @@ def json2dict(filename):
 
 def show_dict(dict):
     print ("{:<10} {:<10}".format('ID', 'NAME'))
-    j = 0
+    j = 1   #list start from 1 and not from 0
     for i in dict.items():
         print ("{:<10} {:<10}".format(j, i[0]))
         j+=1
@@ -45,15 +45,12 @@ def download_multiple(dict):
     in_list = input(": ")
     if(in_list != 'all'):
         in_list = list(in_list.split(','))
-        index = 0
-        #itera su tutto il dict, da fixare
-        for i, k in enumerate(dict):
+        for video in in_list:
+            index=int(video)-1  #list start from 1 and not from 0
             try:
-                if(int(in_list[index])==i):
-                    print(f"Scarico: {k}")
-                    download_single_video(k)
-                if(index+1 < len(in_list)):
-                    index+=1
+                print(f"Scarico: {list(dict.keys())[index]}")
+                download_single_video(list(dict.keys())[index])
+                print("")
             except Exception as e:
                 print(e)
     else:
@@ -61,6 +58,8 @@ def download_multiple(dict):
 
 
 def download_single_video(obj):
+    p = Path("Videos/")
+    p.mkdir(parents=True, exist_ok=True)
     global video_dict
     global start_time
     #download video from source page
@@ -74,8 +73,6 @@ def download_single_video(obj):
 
 #download all files
 def download_all(dict):
-    p = Path("Videos/")
-    p.mkdir(parents=True, exist_ok=True)
     i = 0
     for j in dict:
         download_single_video(j)
@@ -136,7 +133,7 @@ def get_videos():
     for key in videos :
         #go to video page
         browser.get(videos[key])
-        browser.implicitly_wait(10)     #wait for video page to load
+        browser.implicitly_wait(5)     #wait for video page to load
 
         #get video link
         print(f"Getting video link #{i} of {len(videos)}")
