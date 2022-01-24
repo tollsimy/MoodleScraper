@@ -1,3 +1,4 @@
+-unificare path per tutti gli OS (togliere path che non funziona)
 -json mode from -j on command (?)
 -youtube upload
 -retry if string is wrong when inserting video download numbers on !download all
