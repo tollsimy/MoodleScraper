@@ -1,6 +1,8 @@
+import string
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 import urllib.request
 import os
@@ -13,7 +15,19 @@ import platform
 import json
 
 global video_dict
-        
+
+def selWait(by,value):
+    wait=WebDriverWait(browser,10)
+    wait.until(EC.presence_of_element_located((by,value)))
+
+def waitAndFind(by,value):
+    selWait(by,value)
+    return browser.find_element(by, value=value)
+
+def waitAndFindMultiple(by,value):
+    selWait(by,value)
+    return browser.find_elements(by, value=value)
+
 def write_json(filename, jsonObj):
     try:
         with open(filename+'.json', 'w') as outfile:
@@ -58,14 +72,15 @@ def download_multiple(dict):
 
 
 def download_single_video(obj):
-    p = Path("Videos/")
+    p = Path("Videos") / Path(coursename)
+    print(p)
     p.mkdir(parents=True, exist_ok=True)
     global video_dict
     global start_time
     #download video from source page
     cwd = os.getcwd()
     filename=obj.replace("/", "-")
-    path=cwd+str(Path("\\Videos\\" +filename +".mp4"))
+    path=cwd+str(p)+filename +".mp4"
     if(opsys=="Darwin" or opsys=="Linux"):
         path=cwd+str(Path("/Videos/" +filename +".mp4"))
     start_time=time.time()
@@ -84,32 +99,33 @@ def login():
     print("Logging in...")
     #get login page
     browser.get(LOGINPAGE)
-    LOGINPAGE=browser.find_element(by=By.ID, value="btn-login-unitn-it" )
+    LOGINPAGE=waitAndFind(By.ID,"btn-login-unitn-it")
     LOGINPAGE.click()
-    wait = WebDriverWait( browser, 5 )
 
     #login page
-    login = browser.find_element(by=By.NAME, value="j_username")
+    login = waitAndFind(By.NAME,"j_username")
     login.send_keys(USERNAME)
 
-    password = browser.find_element(by=By.NAME, value="j_password")
+    password = waitAndFind(By.NAME,"j_password")
     password.send_keys(PASSWORD)
 
-    accedi = browser.find_element(By.ID, value="btnAccedi")
+    accedi = waitAndFind(By.ID,"btnAccedi")
     pagina=browser.current_url
     accedi.click()
-    wait = WebDriverWait( browser, 5 )
     if(pagina[0:-4]==browser.current_url[0:-4]):
         print("ERROR: Wrong username or password!")
         sys.exit()
     
 
 def get_videos():
+    global coursename
     global video_dict
     #get course page
     browser.get(COURSEPAGE)
 
-    topics = browser.find_elements(By.CLASS_NAME, value="aalink")
+    coursename=waitAndFind(By.TAG_NAME,"h1").text
+    coursename.replace("/", "-")
+    topics = waitAndFindMultiple(By.CLASS_NAME,"aalink")
 
     print("Searching for Kaltura videos...")
 
@@ -133,17 +149,18 @@ def get_videos():
     for key in videos :
         #go to video page
         browser.get(videos[key])
-        browser.implicitly_wait(5)     #wait for video page to load
 
         #get video link
         print(f"Getting video link #{i} of {len(videos)}")
         try:
+            selWait(By.ID, "contentframe")
             browser.switch_to.frame("contentframe")
+            selWait(By.ID, "kplayer_ifp")
             browser.switch_to.frame("kplayer_ifp")
         except Exception as e:
             print("W: One ore more frames not found, please wait...")
         try:
-            linkElem = browser.find_element(By.ID, value="pid_kplayer")
+            linkElem = waitAndFind(By.ID,"pid_kplayer")
             link=linkElem.get_attribute("src")
             video_dict[key] = link
             i+=1
@@ -151,7 +168,7 @@ def get_videos():
             print("W: pid_kplayer not found, please wait...")
             print(e)
             browser.switch_to.default_content()
-            link=browser.find_element(By.XPATH,value=('//*[@id="contentframe"]')).get_attribute('src')
+            link=waitAndFind(By.XPATH,'//*[@id="contentframe"]').get_attribute('src')
 
 def reporthook(count, block_size, total_size):
     global start_time
@@ -206,7 +223,6 @@ try:
 
 except Exception as e :
     print(e)
-    print("ERROR: 'chromedriver.exe' not found")
     sys.exit()
 if(verbose==None):
     print("Starting Chrome silently...")
@@ -240,7 +256,6 @@ try:
 
     print("Download complete, thanks for flying with us!")
 except Exception as e:
-    print("ERROR: page not compatible")
     print(e)
     sys.exit()
 browser.close()
