@@ -135,7 +135,6 @@ def download_single_video(obj):
     global video_dict
     global start_time
     #download video from source page
-    cwd = os.getcwd()
     filename=obj.replace("/", "-")
     path=os.path.join(p, filename+".mp4")
     start_time=time.time()
@@ -225,77 +224,82 @@ def get_videos():
         i+=1
 
 
-#TODO: wrap all in a try-catch to handle program breaking
 #set driver
 def main():
-    global coursename
-    global video_dict
-    global browser
     try:
-        options = webdriver.ChromeOptions()
-        options.add_experimental_option('excludeSwitches', ['enable-logging'])
+        global coursename
+        global video_dict
+        global browser
+        try:
+            options = webdriver.ChromeOptions()
+            options.add_experimental_option('excludeSwitches', ['enable-logging'])
+            if(verbose==None):
+                options.headless = True
+            if(opsys=="Windows"):
+                ser=Service(os.path.join("bin","chromedriver_WIN32.exe"))
+                browser = webdriver.Chrome(options=options, service=ser)
+            elif(opsys=="Linux"):
+                ser=Service(os.path.join("bin","chromedriver_LINUX64"))
+                browser = webdriver.Chrome(options=options,service=ser)
+            elif(opsys=="Darwin"):
+                if(platform.architecture=="arm"):
+                    ser=Service(os.path.join("bin","chromedriver_MAC_M1"))
+                    browser = webdriver.Chrome(options=options,service=ser)
+                else:
+                    ser=Service(os.path.join("bin","chromedriver_MAC64"))
+                    browser = webdriver.Chrome(options=options,service=ser)
+
+        except Exception as e :
+            print(e)
+            sys.exit()
         if(verbose==None):
-            options.headless = True
-        if(opsys=="Windows"):
-            ser=Service(os.path.join("bin","chromedriver_WIN32.exe"))
-            browser = webdriver.Chrome(options=options, service=ser)
-        elif(opsys=="Linux"):
-            ser=Service(os.path.join("bin","chromedriver_LINUX64"))
-            browser = webdriver.Chrome(options=options,service=ser)
-        elif(opsys=="Darwin"):
-            if(platform.architecture=="arm"):
-                ser=Service(os.path.join("bin","chromedriver_MAC_M1"))
-                browser = webdriver.Chrome(options=options,service=ser)
-            else:
-                ser=Service(os.path.join("bin","chromedriver_MAC64"))
-                browser = webdriver.Chrome(options=options,service=ser)
-
-    except Exception as e :
-        print(e)
-        sys.exit()
-    if(verbose==None):
-        print("Starting Chrome silently...")
-    else:
-        print("Starting Chrome...")
-
-
-    try:
-        choice = 'x'
-        filename = ""
-        filepath= ""
-        while(choice != 'Y' and choice != 'N' and choice != 'y' and choice != 'n'):
-            choice = input("Do you want to download from an existing json file? [Y/N]: ")
-        if choice == 'Y' or choice == 'y':
-            while(filename == ""):
-                while(not os.path.isfile(filepath)):
-                    sys.stdout.flush()
-                    filename = input("Type the name of the file (don't include extension): ")
-                    coursename=filename
-                    filepath=os.path.join("json", filename+".json")
-            video_dict = json2dict(filename+'.json')
-            login()
-            download_multiple(video_dict)
+            print("Starting Chrome silently...")
         else:
-            login()
-            get_videos()
-            choice = 'x'
-            while(choice != 'Y' and choice != 'N' and choice != 'y' and choice != 'n'):
-                choice = input("Do you want to create a json file to store the links? [Y/N]: ")
-            if choice == 'Y' or choice == 'y':
-                p=os.path.join("json")
-                path=Path(p)
-                path.mkdir(parents=True, exist_ok=True)
-                create_db()
-            download_multiple(video_dict)
-            pass
-        #create_db()
-        #download_all(video_dict)
+            print("Starting Chrome...")
 
-        print("Download complete, thanks for flying with us!")
-    except Exception as e:
-        print(e)
+
+        try:
+            choice = 'x'
+            filename = ""
+            filepath= ""
+            while(choice != 'Y' and choice != 'N' and choice != 'y' and choice != 'n'):
+                choice = input("Do you want to download from an existing json file? [Y/N]: ")
+            if choice == 'Y' or choice == 'y':
+                while(filename == ""):
+                    while(not os.path.isfile(filepath)):
+                        sys.stdout.flush()
+                        filename = input("Type the name of the file (don't include extension): ")
+                        coursename=filename
+                        filepath=os.path.join("json", filename+".json")
+                video_dict = json2dict(filename+'.json')
+                login()
+                download_multiple(video_dict)
+            else:
+                login()
+                get_videos()
+                choice = 'x'
+                while(choice != 'Y' and choice != 'N' and choice != 'y' and choice != 'n'):
+                    choice = input("Do you want to create a json file to store the links? [Y/N]: ")
+                if choice == 'Y' or choice == 'y':
+                    p=os.path.join("json")
+                    path=Path(p)
+                    path.mkdir(parents=True, exist_ok=True)
+                    create_db()
+                download_multiple(video_dict)
+                pass
+            #create_db()
+            #download_all(video_dict)
+
+            print("Download complete, thanks for flying with us!")
+        except Exception as e:
+            print(e)
+            browser.close()
+            sys.exit()
+        browser.close()
+    except KeyboardInterrupt:
+        print("Moodle Scraper terminated by user! See you soon!")
+        browser.close()
         sys.exit()
-    browser.close()
 
 
 if __name__ == "__main__":
