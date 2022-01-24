@@ -6,6 +6,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 import urllib.request
 import os
+import os.path
 import sys
 import time
 import argparse
@@ -252,12 +253,18 @@ else:
 try:
     choice = 'x'
     filename = ""
+    filepath=""
     while(choice != 'Y' and choice != 'N' and choice != 'y' and choice != 'n'):
         choice = input("Do you want to download from an existing json file? [Y/N]: ")
     if choice == 'Y' or choice == 'y':
         while(filename == ""):
-            filename = input("Type the name of the file (don't include extension): ")
-            coursename=filename
+            while(not os.path.isfile(filepath)):
+                sys.stdout.flush()
+                filename = input("Type the name of the file (don't include extension): ")
+                coursename=filename
+                filepath="json"+"\\"+filename+".json"
+                if(opsys!="Windows"):
+                    filepath=filepath.replace("\\", "/")
         video_dict = json2dict(filename+'.json')
         login()
         download_multiple(video_dict)
