@@ -29,6 +29,19 @@ def hello():
 global video_dict
 global coursename
 
+def validList(list,maxn):   #input is valid if is "all" or numbers in range ( [1:lastVideo] ) separed by a comma
+    valid=1
+    for number in list:
+        if(number=="all" and len(list)==1):
+            return valid
+        if(not number.isnumeric()):
+            return 0
+        if(int(number)<1):
+            return 0
+        if(int(number)>maxn):
+            return 0
+    return valid
+
 def selWait(by,value):
     wait=WebDriverWait(browser,10)
     wait.until(EC.presence_of_element_located((by,value)))
@@ -73,7 +86,10 @@ def show_dict(dict):
 def download_multiple(dict):
     show_dict(dict)
     print("List which videos do you want to download using commas or type 'all' to select all \neg: 1,2,3")
-    in_list = input(": ")
+    in_list="-1"
+    while(not validList(list(in_list.split(',')),len(dict))):
+        sys.stdout.flush()
+        in_list = input(": ")
     if(in_list != 'all'):
         in_list = list(in_list.split(','))
         for video in in_list:
@@ -253,7 +269,7 @@ else:
 try:
     choice = 'x'
     filename = ""
-    filepath=""
+    filepath= ""
     while(choice != 'Y' and choice != 'N' and choice != 'y' and choice != 'n'):
         choice = input("Do you want to download from an existing json file? [Y/N]: ")
     if choice == 'Y' or choice == 'y':
