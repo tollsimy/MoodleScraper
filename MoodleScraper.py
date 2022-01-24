@@ -26,6 +26,7 @@ def hello():
 
 #TODO: use __main__ like normal devs
 global video_dict
+global coursename
 
 def selWait(by,value):
     wait=WebDriverWait(browser,10)
@@ -40,20 +41,24 @@ def waitAndFindMultiple(by,value):
     return browser.find_elements(by, value=value)
 
 def write_json(filename, jsonObj):
+    path="json" + "\\" + filename + '.json'
+    if(opsys!="Windows"):
+        path=path.replace("\\", "/")
     try:
-        with open(filename+'.json', 'w') as outfile:
+        with open(path, 'w') as outfile:
             json.dump(jsonObj, outfile, indent=2)
     except Exception as e:
         print(e)
 
 def create_db():
-    json_filename = ""
-    while(json_filename == ""):
-        json_filename = input("Type the name of the course you want to download: ")
+    json_filename = coursename
     write_json(json_filename, video_dict)
 
 def json2dict(filename):
-    with open(str(filename), "r") as read_file:
+    path="json" + "\\" +str(filename)
+    if(opsys!="Windows"):
+        path=path.replace("\\","/")
+    with open(path, "r") as read_file:
         dict = json.load(read_file)
         return dict
 
@@ -73,7 +78,7 @@ def download_multiple(dict):
         for video in in_list:
             index=int(video)-1  #list start from 1 and not from 0
             try:
-                print(f"Scarico: {list(dict.keys())[index]}")
+                print(f"Downloading: {list(dict.keys())[index]}")
                 download_single_video(list(dict.keys())[index])
                 print("")
             except Exception as e:
@@ -83,17 +88,18 @@ def download_multiple(dict):
 
 
 def download_single_video(obj):
-    p = Path("Videos") / Path(coursename)
-    print(p)
+    global coursename
+    p = Path("Videos")
+    p=Path.joinpath(p,coursename)
     p.mkdir(parents=True, exist_ok=True)
     global video_dict
     global start_time
     #download video from source page
     cwd = os.getcwd()
     filename=obj.replace("/", "-")
-    path=cwd+str(p)+filename +".mp4"
+    path= cwd + "\\" +str(p)+ "\\" + filename +".mp4"
     if(opsys=="Darwin" or opsys=="Linux"):
-        path=cwd+str(Path("/Videos/" +filename +".mp4"))
+        path=path.replace("\\","/")
     start_time=time.time()
     urllib.request.urlretrieve(video_dict[obj], path, reporthook)
 
@@ -223,7 +229,7 @@ try:
         ser=Service(os.getcwd()+str(Path("\\bin\\chromedriver_WIN32.exe")))
         browser = webdriver.Chrome(options=options, service=ser)
     elif(opsys=="Linux"):
-        ser=Service(os.getcwd()+str(Path("\\bin\\chromedriver_LINUX64")))
+        ser=Service(os.getcwd()+str(Path("/bin/chromedriver_LINUX64")))
         browser = webdriver.Chrome(options=options,service=ser)
     elif(opsys=="Darwin"):
         if(platform.architecture=="arm"):
@@ -251,6 +257,7 @@ try:
     if choice == 'Y' or choice == 'y':
         while(filename == ""):
             filename = input("Type the name of the file (don't include extension): ")
+            coursename=filename
         video_dict = json2dict(filename+'.json')
         login()
         download_multiple(video_dict)
@@ -261,6 +268,8 @@ try:
         while(choice != 'Y' and choice != 'N' and choice != 'y' and choice != 'n'):
             choice = input("Do you want to create a json file to store the links? [Y/N]: ")
         if choice == 'Y' or choice == 'y':
+            path=Path("json")
+            path.mkdir(parents=True, exist_ok=True)
             create_db()
         download_multiple(video_dict)
         pass

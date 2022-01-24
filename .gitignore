@@ -3,3 +3,4 @@
 *.code-workspace
 *.json
 *.DS_Store
+**/json

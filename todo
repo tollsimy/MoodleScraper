@@ -1,4 +1,6 @@
--unificare path per tutti gli OS (togliere path che non funziona)
+-fix all "Path" (unify path for all OS)
+-split script in multiple files
+-inserire il nome del corso con tutto il nome del json è scomodo
 -json mode from -j on command (?)
 -youtube upload
 -retry if string is wrong when inserting video download numbers on !download all
