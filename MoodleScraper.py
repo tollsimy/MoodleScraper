@@ -14,19 +14,18 @@ from pathlib import Path
 import platform
 import json
 
+#TODO: use __main__ like normal devs
 global video_dict
 
-def selWait(by,value):
-    wait=WebDriverWait(browser,10)
-    wait.until(EC.presence_of_element_located((by,value)))
-
-def waitAndFind(by,value):
-    selWait(by,value)
-    return browser.find_element(by, value=value)
-
-def waitAndFindMultiple(by,value):
-    selWait(by,value)
-    return browser.find_elements(by, value=value)
+def hello():
+    print('''
+███╗   ███╗ ██████╗  ██████╗ ██████╗ ██╗     ███████╗    ███████╗ ██████╗██████╗  █████╗ ██████╗ ███████╗██████╗ 
+████╗ ████║██╔═══██╗██╔═══██╗██╔══██╗██║     ██╔════╝    ██╔════╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔══██╗
+██╔████╔██║██║   ██║██║   ██║██║  ██║██║     █████╗      ███████╗██║     ██████╔╝███████║██████╔╝█████╗  ██████╔╝
+██║╚██╔╝██║██║   ██║██║   ██║██║  ██║██║     ██╔══╝      ╚════██║██║     ██╔══██╗██╔══██║██╔═══╝ ██╔══╝  ██╔══██╗
+██║ ╚═╝ ██║╚██████╔╝╚██████╔╝██████╔╝███████╗███████╗    ███████║╚██████╗██║  ██║██║  ██║██║     ███████╗██║  ██║
+╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═════╝ ╚══════╝╚══════╝    ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚══════╝╚═╝  ╚═╝                                                                                                                        
+    ''')       
 
 def write_json(filename, jsonObj):
     try:
@@ -150,6 +149,9 @@ def get_videos():
         #go to video page
         browser.get(videos[key])
 
+        #TODO: are emplicity wait really required?
+        browser.implicitly_wait(5)     #wait for video page to load
+
         #get video link
         print(f"Getting video link #{i} of {len(videos)}")
         try:
@@ -194,12 +196,14 @@ args=parser.parse_args()
 
 USERNAME = ""
 PASSWORD = ""
+hello()
 USERNAME=input("Enter username: ")
 PASSWORD=getpass()
 verbose=args.verbose
 COURSEPAGE=args.Page_URL
 LOGINPAGE="https://didatticaonline.unitn.it/dol/loginUniTN.php"
 
+#TODO: wrap all in a try-catch to handle program breaking
 #set driver
 try:
     options = webdriver.ChromeOptions()
