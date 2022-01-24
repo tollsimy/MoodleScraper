@@ -1,4 +1,3 @@
--fix all "Path" (unify path for all OS)
 -split script in multiple files
 -inserire il nome del corso con tutto il nome del json è scomodo
 -json mode from -j on command (?)
