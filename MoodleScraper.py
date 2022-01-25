@@ -12,6 +12,8 @@ import argparse
 from getpass import getpass
 import platform
 import json
+from inputimeout import inputimeout, TimeoutOccurred
+
 
 def hello():
     print('''
@@ -126,9 +128,15 @@ def download_multiple(dict):
     show_dict(dict)
     print("List which videos do you want to download using commas or type 'all' to select all \neg: 1,2,3")
     in_list="-1"
+    maxtime=25
     while(not validList(list(in_list.split(',')),len(dict))):
+        try:
+            in_list=inputimeout(prompt="('all' in " + str(int(maxtime)) + "s): ", timeout=maxtime)
+        except TimeoutOccurred:
+            sys.stdout.flush()
+            in_list ="all"
+            print("all")
         sys.stdout.flush()
-        in_list = input(": ")
     if(in_list != 'all'):
         in_list = list(in_list.split(','))
         for video in in_list:
@@ -225,9 +233,17 @@ def get_videos():
             name2=name2[0:-1]                                           #remove \n
             videos[name2]=topic.get_attribute("href")
 
-    print("Found " + str(len(videos))+ " videos...")
-    print("The script will browse through every video to create a download link, it may take a while")
-    print("Creating download list...")
+    if(len(videos)>0):
+        print("Found " + str(len(videos))+ " videos...")
+        print("The script will browse through every video to create a download link, it may take a while")
+        print("Creating download list...")
+    else:
+        print("No video found!")
+        print("Closing all browser instances, please wait...")
+        browser.quit()
+        print("See you soon!")
+        sys.exit()
+        
 
     video_dict = {}
     i=1
@@ -303,8 +319,16 @@ def main():
             login()
             get_videos()
             choice = 'x'
+            maxtime=10
             while(choice != 'Y' and choice != 'N' and choice != 'y' and choice != 'n'):
-                choice = input("Do you want to create a json file to store the links? [Y/N]: ")
+                message="Do you want to create a json file to store the links? [Y/N]:"
+                print(message)
+                try:
+                    choice = inputimeout(prompt="('Y' in " + str(int(maxtime)) + "s): ", timeout=maxtime)
+                except TimeoutOccurred:
+                    sys.stdout.flush()
+                    choice ='Y'
+                    print("Y")
             if choice == 'Y' or choice == 'y':
                 p=os.path.join("json")
                 path=Path(p)
