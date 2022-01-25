@@ -107,7 +107,12 @@ def create_db():
 def json2dict(filename):
     path=os.path.join("json", str(filename))
     with open(path, "r") as read_file:
-        dict = json.load(read_file)
+        try:
+            dict = json.load(read_file)
+        except Exception as e:
+            print("json not valid!")
+            print(e)
+            sys.exit()
         return dict
 
 def show_dict(dict):
