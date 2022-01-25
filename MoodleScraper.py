@@ -50,9 +50,6 @@ PASSWORD = ""
 LOGINPAGE="https://didatticaonline.unitn.it/dol/loginUniTN.php"
 opsys=platform.system()
 hello()
-USERNAME=input("Enter username: ")
-PASSWORD=getpass()
-
 
 def selWait(by,value,time=3):
     wait=WebDriverWait(browser,time)
@@ -165,6 +162,10 @@ def download_all(dict):
         i=i+1
 
 def login():
+    global USERNAME
+    global PASSWORD
+    USERNAME=input("Enter username: ")
+    PASSWORD=getpass()
     print("Logging in...")
     #get login page
     browser.get(LOGINPAGE)
@@ -172,8 +173,8 @@ def login():
     LOGINP.click()
 
     #login page
-    login = waitAndFind(By.NAME,"j_username")
-    login.send_keys(USERNAME)
+    username = waitAndFind(By.NAME,"j_username")
+    username.send_keys(USERNAME)
 
     password = waitAndFind(By.NAME,"j_password")
     password.send_keys(PASSWORD)
@@ -183,7 +184,7 @@ def login():
     accedi.click()
     if(pagina[0:-4]==browser.current_url[0:-4]):
         print("ERROR: Wrong username or password!")
-        sys.exit()
+        login()
 
 def get_videos():
     global coursename
