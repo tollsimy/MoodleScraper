@@ -259,75 +259,73 @@ def get_videos():
 
 #set driver
 def main():
+    global coursename
+    global video_dict
+    global browser
+    global fromJson
     try:
-        global coursename
-        global video_dict
-        global browser
-        global fromJson
-        try:
-            options = webdriver.ChromeOptions()
-            options.add_experimental_option('excludeSwitches', ['enable-logging'])
-            if(verbose==None):
-                options.headless = True
-            if(opsys=="Windows"):
-                ser=Service(os.path.join("bin","chromedriver_WIN32.exe"))
-                browser = webdriver.Chrome(options=options, service=ser)
-            elif(opsys=="Linux"):
-                ser=Service(os.path.join("bin","chromedriver_LINUX64"))
-                browser = webdriver.Chrome(options=options,service=ser)
-            elif(opsys=="Darwin"):
-                if(platform.architecture=="arm"):
-                    ser=Service(os.path.join("bin","chromedriver_MAC_M1"))
-                    browser = webdriver.Chrome(options=options,service=ser)
-                else:
-                    ser=Service(os.path.join("bin","chromedriver_MAC64"))
-                    browser = webdriver.Chrome(options=options,service=ser)
-
-        except Exception as e :
-            print(e)
-            sys.exit()
+        options = webdriver.ChromeOptions()
+        options.add_experimental_option('excludeSwitches', ['enable-logging'])
         if(verbose==None):
-            print("Starting Chrome silently...")
-        else:
-            print("Starting Chrome...")
-
-        try:
-            if(fromJson!=None):
-                jsonPath=os.path.join("json", JSONFILE+".json")
-                if(os.path.isfile(jsonPath)):
-                    coursename=JSONFILE
-                    #login()
-                    video_dict=json2dict(JSONFILE+".json")
-                    download_multiple(video_dict)
-                else:
-                    print("ERR: JSON file doesn't exist!")
-                    sys.exit()
-            else:        
-                login()
-                get_videos()
-                choice = 'x'
-                while(choice != 'Y' and choice != 'N' and choice != 'y' and choice != 'n'):
-                    choice = input("Do you want to create a json file to store the links? [Y/N]: ")
-                if choice == 'Y' or choice == 'y':
-                    p=os.path.join("json")
-                    path=Path(p)
-                    path.mkdir(parents=True, exist_ok=True)
-                    create_db()
+            options.headless = True
+        if(opsys=="Windows"):
+            ser=Service(os.path.join("bin","chromedriver_WIN32.exe"))
+            browser = webdriver.Chrome(options=options, service=ser)
+        elif(opsys=="Linux"):
+            ser=Service(os.path.join("bin","chromedriver_LINUX64"))
+            browser = webdriver.Chrome(options=options,service=ser)
+        elif(opsys=="Darwin"):
+            if(platform.architecture=="arm"):
+                ser=Service(os.path.join("bin","chromedriver_MAC_M1"))
+                browser = webdriver.Chrome(options=options,service=ser)
+            else:
+                ser=Service(os.path.join("bin","chromedriver_MAC64"))
+                browser = webdriver.Chrome(options=options,service=ser)
+    except Exception as e :
+        print(e)
+        sys.exit()
+    if(verbose==None):
+        print("Starting Chrome silently...")
+    else:
+        print("Starting Chrome...")
+    try:
+        if(fromJson!=None):
+            jsonPath=os.path.join("json", JSONFILE+".json")
+            if(os.path.isfile(jsonPath)):
+                coursename=JSONFILE
+                #login()
+                video_dict=json2dict(JSONFILE+".json")
                 download_multiple(video_dict)
-                #create_db()
-                #download_all(video_dict)
-
-            print("Download complete, thanks for flying with us!")
-        except Exception as e:
-            print(e)
-            browser.close()
-            sys.exit()
-        browser.close()
+            else:
+                print("ERR: JSON file doesn't exist!")
+                sys.exit()
+        else:        
+            login()
+            get_videos()
+            choice = 'x'
+            while(choice != 'Y' and choice != 'N' and choice != 'y' and choice != 'n'):
+                choice = input("Do you want to create a json file to store the links? [Y/N]: ")
+            if choice == 'Y' or choice == 'y':
+                p=os.path.join("json")
+                path=Path(p)
+                path.mkdir(parents=True, exist_ok=True)
+                create_db()
+            download_multiple(video_dict)
+            #create_db()
+            #download_all(video_dict)
+        print("Download complete, thanks for flying with us!")
     except KeyboardInterrupt:
         print("")
-        print("Moodle Scraper terminated by user! See you soon!")
-        browser.close()
+        print("Moodle Scraper terminated by user!")
+        print("Closing all browser instances, please wait...")
+        browser.quit()
+        print("See you soon!")
         sys.exit()
+    except Exception as e:
+        print(e)
+        browser.quit()
+        sys.exit()
+    browser.quit()
 
 
 if __name__ == "__main__":
