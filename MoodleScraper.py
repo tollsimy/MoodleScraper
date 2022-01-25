@@ -21,35 +21,46 @@ def hello():
 ██║╚██╔╝██║██║   ██║██║   ██║██║  ██║██║     ██╔══╝      ╚════██║██║     ██╔══██╗██╔══██║██╔═══╝ ██╔══╝  ██╔══██╗
 ██║ ╚═╝ ██║╚██████╔╝╚██████╔╝██████╔╝███████╗███████╗    ███████║╚██████╗██║  ██║██║  ██║██║     ███████╗██║  ██║
 ╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═════╝ ╚══════╝╚══════╝    ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚══════╝╚═╝  ╚═╝                                                                                                                        
-    ''')       
+    ''')  
+
+def validateInput():
+    global JSONFILE
+    global COURSEPAGE
+    if(fromJson==None):
+        if(COURSEPAGE==""):     #if not '-j' swap first (if not void) arg with second (jsonFile with Coursepage)
+            if(JSONFILE!=""):
+                COURSEPAGE=JSONFILE
+            else:               #if first argument is void
+                print("ERR: Invalid Arguments! You must specify at least a Course Page or a JSON file (along with [-j] option)")
+                print(parser.format_help())
+                sys.exit()
+    elif(fromJson[0]==1):
+        if(JSONFILE==""):       #if 'j' swap second (if not void) arg with first (Coursepage with jsonFile)
+            if(COURSEPAGE!=""):
+                JSONFILE=COURSEPAGE
+            else:               #if first argument is void
+                print("ERR: Invalid Arguments! You must specify at least a Course Page or a JSON file (along with [-j] option)")
+                print(parser.format_help())
+                sys.exit()     
 
 parser = argparse.ArgumentParser(description="Download all Kaltura videos from a UniTN Moodle page.")
 parser.add_argument('-v', '--verbose' ,help="verbose", required=False, action='append_const', const=1)
 parser.add_argument('-j', '--json' ,help="download from existing json", required=False, action='append_const', const=1)
-parser.add_argument("Page_URL",help="Moodle Page link",type=str, default="", nargs='?')
 parser.add_argument("jsonFile",help="JSON File Name without extension (must be in 'json' folder)",type=str, default="",nargs='?')
+parser.add_argument("Page_URL",help="Moodle Page link",type=str, nargs='?', default="")
 args=parser.parse_args()
 verbose=args.verbose
 fromJson=args.json
 JSONFILE=args.jsonFile
 COURSEPAGE=args.Page_URL
-
-if(fromJson==None):
-    if(COURSEPAGE==""):
-        print("ERR: Invalid Arguments!")
-        print(parser.format_help())
-        sys.exit()
-elif(fromJson[0]==1):
-    if(JSONFILE==""):
-        print("ERR: Invalid Arguments!")
-        print(parser.format_help())
-        sys.exit()
+validateInput()
+hello()
 
 USERNAME = ""
 PASSWORD = ""
 LOGINPAGE="https://didatticaonline.unitn.it/dol/loginUniTN.php"
 opsys=platform.system()
-hello()
+
 
 def selWait(by,value,time=3):
     wait=WebDriverWait(browser,time)
