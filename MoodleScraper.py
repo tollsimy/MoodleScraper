@@ -25,10 +25,25 @@ def hello():
 
 parser = argparse.ArgumentParser(description="Download all Kaltura videos from a UniTN Moodle page.")
 parser.add_argument('-v', '--verbose' ,help="verbose", required=False, action='append_const', const=1)
-parser.add_argument("Page_URL",help="Moodle Page link",type=str)
+parser.add_argument('-j', '--json' ,help="download from existing json", required=False, action='append_const', const=1)
+parser.add_argument("Page_URL",help="Moodle Page link",type=str, default="", nargs='?')
+parser.add_argument("jsonFile",help="JSON File Name without extension (must be in 'json' folder)",type=str, default="",nargs='?')
 args=parser.parse_args()
 verbose=args.verbose
+fromJson=args.json
+JSONFILE=args.jsonFile
 COURSEPAGE=args.Page_URL
+
+if(fromJson==None):
+    if(COURSEPAGE==""):
+        print("ERR: Invalid Arguments!")
+        print(parser.format_help())
+        sys.exit()
+elif(fromJson[0]==1):
+    if(JSONFILE==""):
+        print("ERR: Invalid Arguments!")
+        print(parser.format_help())
+        sys.exit()
 
 USERNAME = ""
 PASSWORD = ""
@@ -69,6 +84,7 @@ def validList(list,maxn):   #input is valid if is "all" or numbers in range ( [1
 
 def write_json(filename, jsonObj):
     filename=filename.replace("/", "-")
+    filename=filename.replace(" ", "_")
     path=os.path.join("json", filename+'.json')
     try:
         with open(path, 'w') as outfile:
@@ -81,7 +97,7 @@ def create_db():
     write_json(json_filename, video_dict)
 
 def json2dict(filename):
-    path=os.path.join("json", +str(filename))
+    path=os.path.join("json", str(filename))
     with open(path, "r") as read_file:
         dict = json.load(read_file)
         return dict
@@ -230,6 +246,7 @@ def main():
         global coursename
         global video_dict
         global browser
+        global fromJson
         try:
             options = webdriver.ChromeOptions()
             options.add_experimental_option('excludeSwitches', ['enable-logging'])
@@ -257,24 +274,18 @@ def main():
         else:
             print("Starting Chrome...")
 
-
         try:
-            choice = 'x'
-            filename = ""
-            filepath= ""
-            while(choice != 'Y' and choice != 'N' and choice != 'y' and choice != 'n'):
-                choice = input("Do you want to download from an existing json file? [Y/N]: ")
-            if choice == 'Y' or choice == 'y':
-                while(filename == ""):
-                    while(not os.path.isfile(filepath)):
-                        sys.stdout.flush()
-                        filename = input("Type the name of the file (don't include extension): ")
-                        coursename=filename
-                        filepath=os.path.join("json", filename+".json")
-                video_dict = json2dict(filename+'.json')
-                login()
-                download_multiple(video_dict)
-            else:
+            if(fromJson!=None):
+                jsonPath=os.path.join("json", JSONFILE+".json")
+                if(os.path.isfile(jsonPath)):
+                    coursename=JSONFILE
+                    #login()
+                    video_dict=json2dict(JSONFILE+".json")
+                    download_multiple(video_dict)
+                else:
+                    print("ERR: JSON file doesn't exist!")
+                    sys.exit()
+            else:        
                 login()
                 get_videos()
                 choice = 'x'
@@ -286,9 +297,8 @@ def main():
                     path.mkdir(parents=True, exist_ok=True)
                     create_db()
                 download_multiple(video_dict)
-                pass
-            #create_db()
-            #download_all(video_dict)
+                #create_db()
+                #download_all(video_dict)
 
             print("Download complete, thanks for flying with us!")
         except Exception as e:
@@ -297,6 +307,7 @@ def main():
             sys.exit()
         browser.close()
     except KeyboardInterrupt:
+        print("")
         print("Moodle Scraper terminated by user! See you soon!")
         browser.close()
         sys.exit()
