@@ -11,6 +11,6 @@ In case of error with chromedriver_* please give permission to the program using
 Where * can be _MAC_M1_ for Mac with arm processor and _MAC64_ for the intel ones.
 
 ## Linux
-In case of error with chromedriver_* please give permission to the program using
+In case of error with chromedriver_LINUX64 please give permission to the program using
 
     chmod +x chromedriver_LINUX64
