@@ -12,6 +12,7 @@ import argparse
 from getpass import getpass
 import platform
 import json
+import socket
 from inputimeout import inputimeout, TimeoutOccurred
 
 
@@ -63,6 +64,37 @@ PASSWORD = ""
 LOGINPAGE="https://didatticaonline.unitn.it/dol/loginUniTN.php"
 opsys=platform.system()
 
+def exitRoutine():
+    print("Closing all browser instances, please wait...")
+    browser.quit()
+    print("See you soon!")
+    sys.exit()
+
+def isConnected():
+    try:
+        # connect to the host -- tells us if the host is actually reachable
+        sock = socket.create_connection(("www.google.com", 80))
+        if sock is not None:
+            sock.close
+        return True
+    except OSError:
+        pass
+    return False
+
+def checkConnection():
+    global browser
+    if(not isConnected()):
+        print("Connection lost, please wait...")
+        i=0
+        for i in range(0,10):
+            print("Reconnecting, attemp #" + str(i+1) +"...")
+            time.sleep(1)
+            if(isConnected()):
+                print("Reconnected!")
+                break
+        if(i==4):
+            print("No connection, retry later!") 
+            exitRoutine()
 
 def selWait(by,value,time=3):
     wait=WebDriverWait(browser,time)
@@ -82,13 +114,16 @@ def waitAndFindMultiple(by,value):
 def validList(list,maxn):   #input is valid if is "all" or numbers in range ( [1:lastVideoIndex] ) separed by a comma
     valid=1
     for number in list:
-        if(number=="all" and len(list)==1):
+        if(number=="all" and len(list)>1):  #if input is 'all' skip all cicle and return
             return valid
         if(not number.isnumeric()):
+            print("Input invalid!")
             return 0
         if(int(number)<1):
+            print("Input invalid!")
             return 0
         if(int(number)>maxn):
+            print("Input invalid!")
             return 0
     return valid
 
@@ -111,10 +146,12 @@ def json2dict(filename):
     with open(path, "r") as read_file:
         try:
             dict = json.load(read_file)
+            if(len(dict)<2):
+                raise Exception("json is empty!")
         except Exception as e:
             print("json not valid!")
             print(e)
-            sys.exit()
+            exitRoutine()
         return dict
 
 def show_dict(dict):
@@ -239,10 +276,7 @@ def get_videos():
         print("Creating download list...")
     else:
         print("No video found!")
-        print("Closing all browser instances, please wait...")
-        browser.quit()
-        print("See you soon!")
-        sys.exit()
+        exitRoutine()
         
 
     video_dict = {}
@@ -272,14 +306,13 @@ def get_videos():
         video_dict[key] = link
         i+=1
 
-
-#set driver
 def main():
     global coursename
     global video_dict
     global browser
     global fromJson
     try:
+        #set driver
         options = webdriver.ChromeOptions()
         options.add_experimental_option('excludeSwitches', ['enable-logging'])
         if(verbose==None):
@@ -305,17 +338,20 @@ def main():
     else:
         print("Starting Chrome...")
     try:
+        checkConnection()
         if(fromJson!=None):
             jsonPath=os.path.join("json", JSONFILE+".json")
             if(os.path.isfile(jsonPath)):
                 coursename=JSONFILE
                 #login()
                 video_dict=json2dict(JSONFILE+".json")
+                checkConnection()
                 download_multiple(video_dict)
             else:
                 print("ERR: JSON file doesn't exist!")
-                sys.exit()
-        else:        
+                exitRoutine()
+        else:
+            checkConnection()   
             login()
             get_videos()
             choice = 'x'
@@ -341,10 +377,7 @@ def main():
     except KeyboardInterrupt:
         print("")
         print("Moodle Scraper terminated by user!")
-        print("Closing all browser instances, please wait...")
-        browser.quit()
-        print("See you soon!")
-        sys.exit()
+        exitRoutine()
     except Exception as e:
         print(e)
         browser.quit()
