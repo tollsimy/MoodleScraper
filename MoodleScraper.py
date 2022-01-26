@@ -222,6 +222,45 @@ def download_all(dict):
         print("\n"+"Video "+ str(i+1)+" of " + str(len(dict)) + " downloaded please wait...")
         i=i+1
 
+def download_files():
+    global coursename
+    global video_dict
+
+    p2=os.path.join("Files")
+    path2=Path(p2)
+    path2.mkdir(parents=True, exist_ok=True)
+    #get course page
+    browser.get(COURSEPAGE)
+
+    coursename=waitAndFind(By.TAG_NAME,"h1").text
+    coursename.replace("/", "-")
+    p=os.path.join("Files",coursename)
+    path=Path(p)
+    path.mkdir(parents=True, exist_ok=True)
+
+    print("Searching for files...")
+    topics = waitAndFindMultiple(By.CLASS_NAME,"aalink")
+
+    files=[]
+    for topic in topics:
+        if ("File" or "Cartella" in topic.text):
+           files.append(topic)
+
+    if(len(files)>0):
+        print("Found " + str(len(files))+ " files...")
+        print("The script will download them all, it may take a while")
+    else:
+        print("No files found!")
+
+    for file in files:
+        filename=str(file.text.split("\n",1))
+        filename=filename.replace("/", "-")
+        print(filename)
+        path=os.path.join(p, filename)
+        start_time=time.time()
+        #urllib.request.urlretrieve(video_dict[aaaaaa], path, reporthook)
+
+
 def login():
     global USERNAME
     global PASSWORD
@@ -262,7 +301,7 @@ def get_videos():
     videos = {}
     for topic in topics:
         if "Kaltura Video Resource" in topic.text:
-            name=topic.text.replace("Kaltura Video Resource","")  #remove useless chars
+            name=topic.text.replace("Kaltura Video Resource","")    #remove useless chars
             name=name[0:-1]                                         #remove \n
             videos[name]=topic.get_attribute("href")
         elif "Kaltura Video Presentation" in topic.text:
@@ -311,7 +350,7 @@ def main():
     global video_dict
     global browser
     global fromJson
-    try:
+    try:    #first try-catch in case of non instanced browser
         #set driver
         options = webdriver.ChromeOptions()
         options.add_experimental_option('excludeSwitches', ['enable-logging'])
@@ -330,6 +369,10 @@ def main():
             else:
                 ser=Service(os.path.join("bin","chromedriver_MAC64"))
                 browser = webdriver.Chrome(options=options,service=ser)
+    except KeyboardInterrupt:
+        print("Moodle Scraper terminated by user!")
+        print("See you soon!")
+        sys.exit()
     except Exception as e :
         print(e)
         sys.exit()
@@ -337,7 +380,7 @@ def main():
         print("Starting Chrome silently...")
     else:
         print("Starting Chrome...")
-    try:
+    try:    #second try-catch in case of instanced browser
         checkConnection()
         if(fromJson!=None):
             jsonPath=os.path.join("json", JSONFILE+".json")
@@ -353,6 +396,7 @@ def main():
         else:
             checkConnection()   
             login()
+            download_files()
             get_videos()
             choice = 'x'
             maxtime=10
