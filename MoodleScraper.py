@@ -214,7 +214,7 @@ def download_single_video(obj):
     start_time=time.time()
     urllib.request.urlretrieve(video_dict[obj], path, reporthook)
 
-#download all files
+#download all videos
 def download_all(dict):
     i = 0
     for j in dict:
@@ -225,6 +225,7 @@ def download_all(dict):
 def download_files():
     global coursename
     global video_dict
+    global start_time
 
     p2=os.path.join("Files")
     path2=Path(p2)
@@ -233,7 +234,8 @@ def download_files():
     browser.get(COURSEPAGE)
 
     coursename=waitAndFind(By.TAG_NAME,"h1").text
-    coursename.replace("/", "-")
+    coursename=coursename.replace("/", "-")
+    coursename=coursename.replace(" ", "_")
     p=os.path.join("Files",coursename)
     path=Path(p)
     path.mkdir(parents=True, exist_ok=True)
@@ -243,7 +245,7 @@ def download_files():
 
     files=[]
     for topic in topics:
-        if ("File" or "Cartella" in topic.text):
+        if ("File" in topic.text or "Cartella" in topic.text):
            files.append(topic)
 
     if(len(files)>0):
@@ -251,14 +253,28 @@ def download_files():
         print("The script will download them all, it may take a while")
     else:
         print("No files found!")
-
     for file in files:
-        filename=str(file.text.split("\n",1))
-        filename=filename.replace("/", "-")
-        print(filename)
-        path=os.path.join(p, filename)
-        start_time=time.time()
-        #urllib.request.urlretrieve(video_dict[aaaaaa], path, reporthook)
+
+        filename_list=file.text.split("\n",1)
+        filename=filename_list[0].replace("/", "-")
+        filename=filename.replace(" ", "_")
+        filetype=filename_list[1]
+        
+        #download files
+        if(filetype=="File"):
+            url=file.get_attribute("href")
+            path=os.path.join(p, filename)
+            start_time=time.time()
+
+            #remove forcedownload=1 from url in order to get file resource url
+            if("forcedownload=1" in url):
+                url=url.replace("forcedownload=1","")   #url is wrong because of redirects, you have to use url of redirect
+            print(url)
+            urllib.request.urlretrieve(url, path, reporthook)
+
+        #download folders
+        elif(filetype=="Cartella"):
+            path=os.path.join(p, filename)
 
 
 def login():
