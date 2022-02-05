@@ -14,6 +14,7 @@ import platform
 import json
 import socket
 from inputimeout import inputimeout, TimeoutOccurred
+import shutil
 
 
 def hello():
@@ -86,9 +87,9 @@ def checkConnection():
     if(not isConnected()):
         print("Connection lost, please wait...")
         i=0
-        for i in range(0,10):
-            print("Reconnecting, attemp #" + str(i+1) +"...")
-            time.sleep(1)
+        for i in range(0,5):
+            print("Reconnecting, attempt #" + str(i+1) +"...")
+            time.sleep(2)
             if(isConnected()):
                 print("Reconnected!")
                 break
@@ -114,7 +115,7 @@ def waitAndFindMultiple(by,value):
 def validList(list,maxn):   #input is valid if is "all" or numbers in range ( [1:lastVideoIndex] ) separed by a comma
     valid=1
     for number in list:
-        if(number=="all" and len(list)>1):  #if input is 'all' skip all cicle and return
+        if(number=="all" and len(list)>0):  #if input is 'all' skip all cicle and return
             return valid
         if(not number.isnumeric()):
             print("Input invalid!")
@@ -164,7 +165,8 @@ def show_dict(dict):
 def download_multiple(dict):
     show_dict(dict)
     print("List which videos do you want to download using commas or type 'all' to select all \neg: 1,2,3")
-    in_list="-1"
+    in_list=""
+    #TODO: remove print "input invalid" at first iteration
     maxtime=25
     while(not validList(list(in_list.split(',')),len(dict))):
         try:
@@ -222,12 +224,52 @@ def download_all(dict):
         print("\n"+"Video "+ str(i+1)+" of " + str(len(dict)) + " downloaded please wait...")
         i=i+1
 
+def download_wait():
+    directory=os.path.join(os.getcwd(),"Files","temp", "")
+    seconds = 0
+    dl_wait = True
+    while dl_wait:
+        fileProgress(seconds,"Downloading files, please wait")
+        time.sleep(1)
+        dl_wait = False
+        files = os.listdir(directory)
+
+        for fname in files:
+            if fname.endswith('.crdownload'):
+                dl_wait = True
+
+        seconds += 1
+    return seconds
+
+def moveFiles():
+    global coursename
+    source_folder = os.path.join(os.getcwd(),"Files","temp", "")
+    destination_folder = os.path.join(os.getcwd(),"Files",coursename, "")
+
+    print("Moving files, plese wait...")
+    # fetch all files
+    for file_name in os.listdir(source_folder):
+        # construct full file path
+        source = source_folder + file_name
+        destination = destination_folder + file_name
+        shutil.move(source, destination)
+    shutil.rmtree(os.path.join(os.getcwd(),"Files","temp"))
+
+def fileProgress(i,stringa):
+    dots=i%4
+    stringa
+    while(dots>0):
+        stringa=stringa + "."
+        dots=dots-1
+    print("\r {}".format(stringa+"   "), end="")
+
 def download_files():
+    #TODO: try-except
     global coursename
     global video_dict
     global start_time
 
-    p2=os.path.join("Files")
+    p2=os.path.join("Files","temp")
     path2=Path(p2)
     path2.mkdir(parents=True, exist_ok=True)
     #get course page
@@ -241,40 +283,69 @@ def download_files():
     path.mkdir(parents=True, exist_ok=True)
 
     print("Searching for files...")
-    topics = waitAndFindMultiple(By.CLASS_NAME,"aalink")
+    topics=waitAndFindMultiple(By.CLASS_NAME,"aalink")
 
-    files=[]
+    files={}
+    folders={}
     for topic in topics:
         if ("File" in topic.text or "Cartella" in topic.text):
-           files.append(topic)
+            filename_list=topic.text.split("\n",1)
+            filename=filename_list[0].replace("/", "-")
+            filename=filename.replace(" ", "_")
+            filetype=filename_list[1]
+            if(filetype=="File"):
+                files[filename]=topic.get_attribute("href")
+            elif(filetype=="Cartella"):
+                folders[filename]=topic.get_attribute("href")
 
-    if(len(files)>0):
-        print("Found " + str(len(files))+ " files...")
+    if((len(files)+len(folders))>0):
+        print("Found " + str(len(files)+len(folders))+ " files...")
         print("The script will download them all, it may take a while")
     else:
         print("No files found!")
+
+    fileURLS=[]
+    i=0
     for file in files:
-
-        filename_list=file.text.split("\n",1)
-        filename=filename_list[0].replace("/", "-")
-        filename=filename.replace(" ", "_")
-        filetype=filename_list[1]
-        
         #download files
-        if(filetype=="File"):
-            url=file.get_attribute("href")
-            path=os.path.join(p, filename)
-            start_time=time.time()
+        path2=os.path.join(p2, file)
+        #execute javascript code that obtain the redirection url
+        jsCode= "var xhr = new XMLHttpRequest();" + "xhr.open('GET', arguments[0], false);" + "xhr.send(null);" + "return xhr.responseURL;"
+        fileURL= browser.execute_script(jsCode,files[file])
+        #remove forcedownload=1 from url in order to get file resource url
+        if("forcedownload=1" in fileURL):
+            fileURL=fileURL.replace("?forcedownload=1","")
+        fileURLS.append(fileURL)
+        fileProgress(i,"Creating file list")
+        i=i+1
 
-            #remove forcedownload=1 from url in order to get file resource url
-            if("forcedownload=1" in url):
-                url=url.replace("forcedownload=1","")   #url is wrong because of redirects, you have to use url of redirect
-            print(url)
-            urllib.request.urlretrieve(url, path, reporthook)
-
+    i=0
+    for folder in folders:
         #download folders
-        elif(filetype=="Cartella"):
-            path=os.path.join(p, filename)
+        path2=os.path.join(p2, folder)
+        url=folders[folder]
+        browser.get(url)
+        browser.find_element(By.XPATH, value="//button[@type='submit' and @class='btn btn-secondary']").click()
+        download_wait()
+
+
+    for file in fileURLS:
+        if("pluginfile.php" in file):
+            browser.get(file)
+            download_wait()
+        else: #TODO:some files open in another window (ES. C crash course V and VI Embedded Systems)
+            pass
+            #browser.get(url)
+            #click=waitAndFind(By.TAG_NAME, value="a")
+            #fileURL=click.get_attribute("href")
+            #print(fileURL)
+
+    #TODO: some files open in the first window (es. elettronica anlogica)
+    
+    time.sleep(2)
+    print("")
+    moveFiles()
+    print("Files download complete!")
 
 
 def login():
@@ -370,6 +441,12 @@ def main():
         #set driver
         options = webdriver.ChromeOptions()
         options.add_experimental_option('excludeSwitches', ['enable-logging'])
+        options.add_experimental_option('prefs', {
+        "download.default_directory": os.path.join(os.getcwd(),"Files","temp"), #Change default directory for downloads
+        "download.prompt_for_download": False, #To auto download the file
+        "download.directory_upgrade": True,
+        "plugins.always_open_pdf_externally": True #It will not show PDF directly in chrome 
+        })
         if(verbose==None):
             options.headless = True
         if(opsys=="Windows"):
@@ -412,12 +489,10 @@ def main():
         else:
             checkConnection()   
             login()
-            download_files()
-            get_videos()
             choice = 'x'
             maxtime=10
             while(choice != 'Y' and choice != 'N' and choice != 'y' and choice != 'n'):
-                message="Do you want to create a json file to store the links? [Y/N]:"
+                message="Do you want to download files? [Y/N]:"
                 print(message)
                 try:
                     choice = inputimeout(prompt="('Y' in " + str(int(maxtime)) + "s): ", timeout=maxtime)
@@ -425,14 +500,48 @@ def main():
                     sys.stdout.flush()
                     choice ='Y'
                     print("Y")
+            print("Ok!")
             if choice == 'Y' or choice == 'y':
-                p=os.path.join("json")
-                path=Path(p)
-                path.mkdir(parents=True, exist_ok=True)
-                create_db()
-            download_multiple(video_dict)
-            #create_db()
-            #download_all(video_dict)
+                download_files()
+
+            global video
+            video=False
+            choice = 'x'
+            maxtime=10
+            while(choice != 'Y' and choice != 'N' and choice != 'y' and choice != 'n'):
+                message="Do you want to download Kaltura videos? [Y/N]:"
+                print(message)
+                try:
+                    choice = inputimeout(prompt="('Y' in " + str(int(maxtime)) + "s): ", timeout=maxtime)
+                except TimeoutOccurred:
+                    sys.stdout.flush()
+                    choice ='Y'
+                    print("Y")
+            print("Ok!")
+            if choice == 'Y' or choice == 'y':
+                get_videos()
+                video=True
+            
+            if(video==True):
+                choice = 'x'
+                maxtime=10
+                while(choice != 'Y' and choice != 'N' and choice != 'y' and choice != 'n'):
+                    message="Do you want to create a json file to store the video links? [Y/N]:"
+                    print(message)
+                    try:
+                        choice = inputimeout(prompt="('Y' in " + str(int(maxtime)) + "s): ", timeout=maxtime)
+                    except TimeoutOccurred:
+                        sys.stdout.flush()
+                        choice ='Y'
+                        print("Y")
+                if choice == 'Y' or choice == 'y':
+                    p=os.path.join("json")
+                    path=Path(p)
+                    path.mkdir(parents=True, exist_ok=True)
+                    create_db()
+                download_multiple(video_dict)
+                #create_db()
+                #download_all(video_dict)
         print("Download complete, thanks for flying with us!")
     except KeyboardInterrupt:
         print("")

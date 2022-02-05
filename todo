@@ -1,5 +1,3 @@
 -split script in multiple files
--inserire il nome del corso con tutto il nome del json è scomodo
--script che fa youtube upload dalla cartella dei video
--ci e qualquadra che non cosa con la page di ES
--other types of files
+-ci e qualquadra che non cosa con la page di ES (per i video)
+-check filename (windows not allowed characters)
