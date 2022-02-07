@@ -15,6 +15,7 @@ idna==3.3
 inputimeout==1.0.4
 kaitaistruct==0.9
 outcome==1.1.0
+pathvalidate==2.5.0
 pyasn1==0.4.8
 pycparser==2.21
 pydivert==2.1.0

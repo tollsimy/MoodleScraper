@@ -15,6 +15,7 @@ import json
 import socket
 from inputimeout import inputimeout, TimeoutOccurred
 import shutil
+import pathvalidate
 
 
 def hello():
@@ -67,6 +68,7 @@ opsys=platform.system()
 
 def exitRoutine():
     print("Closing all browser instances, please wait...")
+    #browser.close()
     browser.quit()
     print("See you soon!")
     sys.exit()
@@ -118,18 +120,15 @@ def validList(list,maxn):   #input is valid if is "all" or numbers in range ( [1
         if(number=="all" and len(list)>0):  #if input is 'all' skip all cicle and return
             return valid
         if(not number.isnumeric()):
-            print("Input invalid!")
             return 0
         if(int(number)<1):
-            print("Input invalid!")
             return 0
         if(int(number)>maxn):
-            print("Input invalid!")
             return 0
     return valid
 
 def write_json(filename, jsonObj):
-    filename=filename.replace("/", "-")
+    filename=pathvalidate.sanitize_filename(filename)
     filename=filename.replace(" ", "_")
     path=os.path.join("json", filename+'.json')
     try:
@@ -166,11 +165,14 @@ def download_multiple(dict):
     show_dict(dict)
     print("List which videos do you want to download using commas or type 'all' to select all \neg: 1,2,3")
     in_list=""
-    #TODO: remove print "input invalid" at first iteration
     maxtime=25
+    firstIt=1
     while(not validList(list(in_list.split(',')),len(dict))):
+        if(firstIt!=1):
+            print("Input invalid!")
         try:
             in_list=inputimeout(prompt="('all' in " + str(int(maxtime)) + "s): ", timeout=maxtime)
+            firstIt=0
         except TimeoutOccurred:
             sys.stdout.flush()
             in_list ="all"
@@ -211,7 +213,8 @@ def download_single_video(obj):
     global video_dict
     global start_time
     #download video from source page
-    filename=obj.replace("/", "-")
+    filename=pathvalidate.sanitize_filename(obj)
+    filename=filename.replace(" ","_")
     path=os.path.join(p, filename+".mp4")
     start_time=time.time()
     urllib.request.urlretrieve(video_dict[obj], path, reporthook)
@@ -276,7 +279,7 @@ def download_files():
     browser.get(COURSEPAGE)
 
     coursename=waitAndFind(By.TAG_NAME,"h1").text
-    coursename=coursename.replace("/", "-")
+    coursename=pathvalidate.sanitize_filename(coursename)
     coursename=coursename.replace(" ", "_")
     p=os.path.join("Files",coursename)
     path=Path(p)
@@ -290,16 +293,17 @@ def download_files():
     for topic in topics:
         if ("File" in topic.text or "Cartella" in topic.text):
             filename_list=topic.text.split("\n",1)
-            filename=filename_list[0].replace("/", "-")
+            filename=filename_list[0]
+            filename=pathvalidate.sanitize_filename(filename)
             filename=filename.replace(" ", "_")
             filetype=filename_list[1]
             if(filetype=="File"):
-                files[filename]=topic.get_attribute("href")
+                files[topic.get_attribute("href")]=filename
             elif(filetype=="Cartella"):
-                folders[filename]=topic.get_attribute("href")
+                folders[topic.get_attribute("href")]=filename
 
     if((len(files)+len(folders))>0):
-        print("Found " + str(len(files)+len(folders))+ " files...")
+        print("Found " + str((len(files)+len(folders)))+ " files...")
         print("The script will download them all, it may take a while")
     else:
         print("No files found!")
@@ -308,39 +312,42 @@ def download_files():
     i=0
     for file in files:
         #download files
-        path2=os.path.join(p2, file)
+        path2=os.path.join(p2, files[file])
+
         #execute javascript code that obtain the redirection url
-        jsCode= "var xhr = new XMLHttpRequest();" + "xhr.open('GET', arguments[0], false);" + "xhr.send(null);" + "return xhr.responseURL;"
-        fileURL= browser.execute_script(jsCode,files[file])
+        #jsCode= "var xhr = new XMLHttpRequest();" + "xhr.open('GET', arguments[0], false);" + "xhr.send(null);" + "return xhr.responseURL;"
+        #fileURL= browser.execute_script(jsCode,files[file])
+
+        #simpler solution
+        fileURL=file+"&redirect=1"
+
         #remove forcedownload=1 from url in order to get file resource url
         if("forcedownload=1" in fileURL):
             fileURL=fileURL.replace("?forcedownload=1","")
+
         fileURLS.append(fileURL)
         fileProgress(i,"Creating file list")
         i=i+1
 
-    i=0
+
     for folder in folders:
         #download folders
-        path2=os.path.join(p2, folder)
-        url=folders[folder]
+        path2=os.path.join(p2, folders[folder])
+        url=folder
         browser.get(url)
-        browser.find_element(By.XPATH, value="//button[@type='submit' and @class='btn btn-secondary']").click()
+        waitAndFind(By.XPATH, value="//button[@type='submit' and @class='btn btn-secondary']").click()
         download_wait()
+        i=i+1
 
 
     for file in fileURLS:
-        if("pluginfile.php" in file):
+        #TODO: fix (try-except probably)
+        if(1):
             browser.get(file)
+            if("mp4" in browser.current_url):
+                browser.execute_script("window.location = \'"+browser.current_url+"?forcedownload=1"+"\';" "window.stop;")  #necessary to navigate to page with js script in order to stop loading the page, otherwise chromedriver get stuck in that page
             download_wait()
-        else: #TODO:some files open in another window (ES. C crash course V and VI Embedded Systems)
-            pass
-            #browser.get(url)
-            #click=waitAndFind(By.TAG_NAME, value="a")
-            #fileURL=click.get_attribute("href")
-            #print(fileURL)
-
-    #TODO: some files open in the first window (es. elettronica anlogica)
+            i=i+1
     
     time.sleep(2)
     print("")
@@ -380,7 +387,8 @@ def get_videos():
     browser.get(COURSEPAGE)
 
     coursename=waitAndFind(By.TAG_NAME,"h1").text
-    coursename.replace("/", "-")
+    coursename=pathvalidate.sanitize_filename(coursename)
+    coursename=coursename.replace(" ","_")
     topics = waitAndFindMultiple(By.CLASS_NAME,"aalink")
 
     print("Searching for Kaltura videos...")
@@ -447,6 +455,7 @@ def main():
         "download.directory_upgrade": True,
         "plugins.always_open_pdf_externally": True #It will not show PDF directly in chrome 
         })
+        options.add_argument("--mute-audio")
         if(verbose==None):
             options.headless = True
         if(opsys=="Windows"):
@@ -549,6 +558,8 @@ def main():
         exitRoutine()
     except Exception as e:
         print(e)
+        #TODO: check if chrome is closing properly
+        browser.stop_client()
         browser.quit()
         sys.exit()
     browser.quit()
