@@ -16,6 +16,8 @@ import socket
 from inputimeout import inputimeout, TimeoutOccurred
 import shutil
 import pathvalidate
+from contextlib import suppress
+import psutil
 
 
 def hello():
@@ -68,8 +70,16 @@ opsys=platform.system()
 
 def exitRoutine():
     print("Closing all browser instances, please wait...")
-    #browser.close()
+    browser.stop_client()
     browser.quit()
+    #assert that all processes are terminated (on windows it's the only way to properly close chromedriver from an exception)
+    #TODO:check for other OS if it's closing
+    if(opsys=="Windows"):
+        for process in psutil.process_iter():
+            if process.name() == 'chrome.exe' and '--test-type=webdriver' in process.cmdline():
+                with suppress(psutil.NoSuchProcess):
+                    p = psutil.Process(process.pid)
+                    p.terminate()
     print("See you soon!")
     sys.exit()
 
@@ -267,7 +277,6 @@ def fileProgress(i,stringa):
     print("\r {}".format(stringa+"   "), end="")
 
 def download_files():
-    #TODO: try-except
     global coursename
     global video_dict
     global start_time
@@ -341,14 +350,12 @@ def download_files():
 
 
     for file in fileURLS:
-        #TODO: fix (try-except probably)
-        if(1):
-            browser.get(file)
-            if("mp4" in browser.current_url):
-                browser.execute_script("window.location = \'"+browser.current_url+"?forcedownload=1"+"\';" "window.stop;")  #necessary to navigate to page with js script in order to stop loading the page, otherwise chromedriver get stuck in that page
-            download_wait()
-            i=i+1
-    
+        browser.get(file)
+        if("mp4" in browser.current_url):
+            browser.execute_script("window.location = \'"+browser.current_url+"?forcedownload=1"+"\';" "window.stop;")  #necessary to navigate to page with js script in order to stop loading the page, otherwise chromedriver get stuck in that page
+        download_wait()
+        i=i+1
+
     time.sleep(2)
     print("")
     moveFiles()
@@ -426,17 +433,20 @@ def get_videos():
             browser.switch_to.frame("contentframe")
             selWait(By.ID, "kplayer_ifp",2)
             browser.switch_to.frame("kplayer_ifp")
-        except Exception as e:
-            print("W: One ore more frames not found, please wait...")
+        except Exception:
+            print("W: One ore more frames are hidden, please wait...")
         try:
             linkElem = waitAndFind(By.ID,"pid_kplayer")
             link=linkElem.get_attribute("src")
-        except Exception as e:
-            print("W: pid_kplayer not found, please wait...")
-            print(e)
-            browser.switch_to.default_content()
-            link=waitAndFind(By.XPATH,'//*[@id="contentframe"]').get_attribute('src')
-        
+        except Exception:
+            print("W: pid_kplayer is hidden, please wait...")
+            waitAndFind(By.TAG_NAME,"button").click()
+            name=waitAndFind(By.XPATH, "//*[contains(@id, 'kaltura_player')]")
+            name=name.get_attribute("id")
+            browser.switch_to.frame(name+"_ifp")
+            linkElem=waitAndFind(By.ID,"pid_"+name)
+            link=linkElem.get_attribute("src")
+
         video_dict[key] = link
         i+=1
 
@@ -456,6 +466,7 @@ def main():
         "plugins.always_open_pdf_externally": True #It will not show PDF directly in chrome 
         })
         options.add_argument("--mute-audio")
+        options.add_argument("--window-size=500,500")
         if(verbose==None):
             options.headless = True
         if(opsys=="Windows"):
@@ -558,12 +569,11 @@ def main():
         exitRoutine()
     except Exception as e:
         print(e)
-        #TODO: check if chrome is closing properly
         browser.stop_client()
         browser.quit()
         sys.exit()
     browser.quit()
-
+    sys.exit()
 
 if __name__ == "__main__":
     main()
