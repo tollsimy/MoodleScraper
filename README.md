@@ -14,3 +14,16 @@ Where * can be _MAC_M1_ for Mac with arm processor and _MAC64_ for the intel one
 In case of error with chromedriver_LINUX64 please give permission to the program using
 
     chmod +x chromedriver_LINUX64
+
+# Usage
+```
+python MoodleScraper.py [-v] course_page_link
+```
+or
+```
+python MoodleScraper.py [-j] json_file_name_WO_extension
+```
+For help:
+```
+python MoodleScraper.py [-h]
+```
