@@ -22,7 +22,7 @@ python MoodleScraper.py [-v] course_page_link
 ```
 or
 ```
-python MoodleScraper.py [-v] [-j] json_file_name_WO_extension
+python MoodleScraper.py [-v] -j json_file_name_WO_extension
 ```
 verbose mode can be enabled using:
 ```
