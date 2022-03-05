@@ -7,5 +7,5 @@
 **/Files
 /test.py
 **/.vscode
-**/__pycache__
+__pycache__/
 **/Releases
