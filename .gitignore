@@ -6,4 +6,6 @@
 **/json
 **/Files
 /test.py
+**/.vscode
+**/__pycache__
 **/Releases
