@@ -370,7 +370,7 @@ def login():
     print("Logging in...")
     #get login page
     browser.get(LOGINPAGE)
-    LOGINP=waitAndFind(By.ID,"btn-login-unitn-it")
+    LOGINP=waitAndFind(By.ID,"btn-login-unitn-en")   #TODO: rendere indipendente dalla lingua di sistema
     LOGINP.click()
 
     #login page
