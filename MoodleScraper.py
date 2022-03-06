@@ -217,7 +217,7 @@ def reporthook(count, block_size, total_size):
     sys.stdout.flush()
 
 def download_single_video(obj):
-    p=os.path.join("Videos/",coursename)
+    p=os.path.join("Videos/",coursename+"_videos")
     path=Path(p)
     path.mkdir(parents=True, exist_ok=True)
     global video_dict
@@ -257,7 +257,7 @@ def download_wait():
 def moveFiles():
     global coursename
     source_folder = os.path.join(os.getcwd(),"Files","temp", "")
-    destination_folder = os.path.join(os.getcwd(),"Files",coursename, "")
+    destination_folder = os.path.join(os.getcwd(),"Files",coursename+"_files", "")
 
     print("Moving files, plese wait...")
     # fetch all files
@@ -290,7 +290,7 @@ def download_files():
     coursename=waitAndFind(By.TAG_NAME,"h1").text
     coursename=pathvalidate.sanitize_filename(coursename)
     coursename=coursename.replace(" ", "_")
-    p=os.path.join("Files",coursename)
+    p=os.path.join("Files",coursename +"_files")
     path=Path(p)
     path.mkdir(parents=True, exist_ok=True)
 
