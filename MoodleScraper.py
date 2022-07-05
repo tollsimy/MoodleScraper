@@ -225,6 +225,8 @@ def download_single_video(obj):
     #download video from source page
     filename=pathvalidate.sanitize_filename(obj)
     filename=filename.replace(" ","_")
+    filename=str(obj)+'-'+filename
+    print(filename)
     path=os.path.join(p, filename+".mp4")
     start_time=time.time()
     urllib.request.urlretrieve(video_dict[obj], path, reporthook)
@@ -297,6 +299,7 @@ def download_files():
     print("Searching for files...")
     topics=waitAndFindMultiple(By.CLASS_NAME,"aalink")
 
+    index=0
     files={}
     folders={}
     for topic in topics:
@@ -305,11 +308,15 @@ def download_files():
             filename=filename_list[0]
             filename=pathvalidate.sanitize_filename(filename)
             filename=filename.replace(" ", "_")
+            filename=str(index)+'-'+filename
+            print(filename)
             filetype=filename_list[1]
             if(filetype=="File"):
                 files[topic.get_attribute("href")]=filename
             elif(filetype=="Cartella"):
                 folders[topic.get_attribute("href")]=filename
+            index+=1
+    print()
 
     if((len(files)+len(folders))>0):
         print("Found " + str((len(files)+len(folders)))+ " files...")
@@ -402,6 +409,7 @@ def get_videos():
 
     videos = {}
     for topic in topics:
+        name=''
         if "Kaltura Video Resource" in topic.text:
             name=topic.text.replace("Kaltura Video Resource","")    #remove useless chars
             name=name[0:-1]                                         #remove \n
@@ -410,6 +418,9 @@ def get_videos():
             name2=topic.text.replace("Kaltura Video Presentation","")   #remove useless chars
             name2=name2[0:-1]                                           #remove \n
             videos[name2]=topic.get_attribute("href")
+        if(name!=''):
+            print(name)
+    print()
 
     if(len(videos)>0):
         print("Found " + str(len(videos))+ " videos...")
