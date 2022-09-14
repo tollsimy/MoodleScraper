@@ -1,5 +1,6 @@
 **/Videos
 **/env
+**/bin
 *.code-workspace
 *.json
 *.DS_Store
